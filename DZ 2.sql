@@ -95,6 +95,17 @@ SELECT to_char(DATE_BIRTH, 'YYYY'),
 FROM STUDENTS
 GROUP BY DATE_BIRTH
 --5. Для студентов каждого курса подсчитать средний балл
+SELECT AVG(SCORE)
+FROM STUDENTS
+WHERE N_GROUP>=2000 AND N_GROUP<3000; --хз как масштабировать на все курсы
+--6. Для студентов заданного курса вывести один номер групп с максимальным средним баллом
+SELECT -- N_GROUP,
+       MAX(AVG(SCORE)) AS MAX
+FROM STUDENTS
+where N_GROUP between 2000 and 3000
+GROUP BY N_GROUP;
+--7. Для каждой группы подсчитать средний балл, вывести на экран только те номера групп и их средний балл, 
+--      в которых он менее или равен 3.5. Отсортировать по от меньшего среднего балла к большему.
 
 
 
@@ -121,8 +132,19 @@ GROUP BY DATE_BIRTH
 
 
 
-
-
-
-
+--3) Многотабличные запросы
+--1. Вывести все имена и фамилии студентов, и название хобби, которым занимается этот студент.
+SELECT s.NAME,
+       s.SURNAME,
+       h.NAME AS HOBBIE_NAME
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID;
+--2. Вывести информацию о студенте, занимающимся хобби самое продолжительное время.
+SELECT MIN(s_h.DATE_START)
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h
+WHERE s.N_Z = s_h.N_Z;
 
