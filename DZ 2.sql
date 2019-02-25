@@ -73,7 +73,8 @@ WHERE s.Address LIKE 'г. Дубна%';
 --2) Групповые функции
 --1. Выведите на экран номера групп и количество студентов, обучающихся в них
 SELECT N_GROUP,
-       COUNT(N_GROUP) AS COUNT_STUDENTS --С "количество_студентов" НЕ работает
+       COUNT(N_GROUP) AS COUNT_STUDENTS --С "количество_студентов" НЕ работает 
+       --так нормально. Максимальный размер идентификатора - 30 символов, киррилица 1 за 2
 FROM STUDENTS
 GROUP BY N_GROUP
 ORDER BY N_GROUP DESC;
@@ -90,6 +91,7 @@ FROM STUDENTS
 GROUP BY SURNAME
 ORDER BY SURNAME;
 --4. Подсчитать студентов, которые родились в каждом году ???
+--можно группировать не только по конкретному атрибуту, но и по атрибуту с использованием функции
 SELECT to_char(DATE_BIRTH, 'YYYY'),
        COUNT(to_char(DATE_BIRTH, 'YYYY'))
 FROM STUDENTS
