@@ -97,19 +97,40 @@ SELECT to_char(DATE_BIRTH, 'YYYY'),
 FROM STUDENTS
 GROUP BY DATE_BIRTH
 --5. Для студентов каждого курса подсчитать средний балл
-SELECT AVG(SCORE)
+SELECT substr(n_group,1,1) as N_Kursa,
+       AVG(SCORE)
 FROM STUDENTS
-WHERE N_GROUP>=2000 AND N_GROUP<3000; --хз как масштабировать на все курсы
+group by substr(n_group,1,1)
 --6. Для студентов заданного курса вывести один номер групп с максимальным средним баллом
-SELECT -- N_GROUP,
-       MAX(AVG(SCORE)) AS MAX
+SELECT N_GROUP,
+       MAX(SCORE) AS MAX
 FROM STUDENTS
-where N_GROUP between 2000 and 3000
-GROUP BY N_GROUP;
+GROUP BY N_GROUP
+ORDER BY MAX(SCORE) DESC FETCH FIRST 1 ROWS ONLY
 --7. Для каждой группы подсчитать средний балл, вывести на экран только те номера групп и их средний балл, 
 --      в которых он менее или равен 3.5. Отсортировать по от меньшего среднего балла к большему.
-
-
+SELECT N_GROUP,
+       AVG(SCORE) AS AVG_Group
+FROM STUDENTS
+GROUP BY N_GROUP 
+HAVING AVG(SCORE) >= 3.5
+Order by AVG(SCORE) ASC;
+--8. Вывести 3 хобби с максимальным риском
+SELECT NAME,
+       MAX(RISK) AS MAX
+FROM HOBBIES
+GROUP BY NAME
+ORDER BY MAX(RISK) DESC FETCH FIRST 3 ROWS ONLY
+--9. Для каждой группы в одном запросе вывести количество студентов, максимальный балл в группе, 
+--      средний балл в группе, минимальный балл в группе
+SELECT N_GROUP,
+       COUNT(N_GROUP) AS Sum_Student,
+       MAX(SCORE) as MAX_score,
+       AVG(SCORE) as AVG_score,
+       MIN(SCORE) as MIN_score
+FROM students
+GROUP BY N_GROUP
+--10. Вывести студента/ов, который/ые имеют наибольший балл в заданной группе
 
 
 
@@ -145,8 +166,13 @@ FROM STUDENTS s,
 WHERE s.N_Z = s_h.N_Z AND
       s_h.HOBBY_ID = h.ID;
 --2. Вывести информацию о студенте, занимающимся хобби самое продолжительное время.
-SELECT MIN(s_h.DATE_START)
+SELECT s.NAME,
+       s.SURNAME,
+       s_h.DATE_START
 FROM STUDENTS s,
      STUDENTS_HOBBIES s_h
-WHERE s.N_Z = s_h.N_Z;
-
+WHERE s.N_Z = s_h.N_Z
+GROUP BY s.NAME, s.SURNAME, s_h.DATE_START
+ORDER BY MIN(s_h.DATE_START) ASC FETCH FIRST 1 ROWS ONLY
+--3. Вывести имя, фамилию, номер зачетки и дату рождения для студентов, средний балл которых выше среднего, 
+--     а риск всех хобби, которыми он занимается в данный момент больше 0.9.
