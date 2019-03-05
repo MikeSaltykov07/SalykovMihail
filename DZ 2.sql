@@ -73,8 +73,7 @@ WHERE s.Address LIKE 'г. Дубна%';
 --2) Групповые функции
 --1. Выведите на экран номера групп и количество студентов, обучающихся в них
 SELECT N_GROUP,
-       COUNT(N_GROUP) AS COUNT_STUDENTS --С "количество_студентов" НЕ работает 
-       --так нормально. Максимальный размер идентификатора - 30 символов, киррилица 1 за 2
+       COUNT(N_GROUP) AS COUNT_STUDENTS --С "количество_студентов" НЕ работает
 FROM STUDENTS
 GROUP BY N_GROUP
 ORDER BY N_GROUP DESC;
@@ -131,30 +130,21 @@ SELECT N_GROUP,
 FROM students
 GROUP BY N_GROUP
 --10. Вывести студента/ов, который/ые имеют наибольший балл в заданной группе
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+SELECT NAME,
+       SURNAME,
+       SCORE
+FROM STUDENTS
+WHERE N_GROUP = :N_GROUP
+ORDER BY SCORE DESC FETCH FIRST 1 ROWS ONLY;
+--11. Аналогично 10 заданию, но вывести в одном запросе для каждой группы студента с максимальным баллом.
+SELECT *
+FROM ( SELECT N_GROUP,
+              MAX(SCORE) as MAX_score,
+       FROM STUDENTS
+       GROUP BY N_GROUP
+     )
+WHERE N_GROUP AND
+      MAX_score = STUDENTS.SCORE
 --3) Многотабличные запросы
 --1. Вывести все имена и фамилии студентов, и название хобби, которым занимается этот студент.
 SELECT s.NAME,
@@ -176,3 +166,110 @@ GROUP BY s.NAME, s.SURNAME, s_h.DATE_START
 ORDER BY MIN(s_h.DATE_START) ASC FETCH FIRST 1 ROWS ONLY
 --3. Вывести имя, фамилию, номер зачетки и дату рождения для студентов, средний балл которых выше среднего, 
 --     а риск всех хобби, которыми он занимается в данный момент больше 0.9.
+SELECT s.N_Z,
+       s.NAME,
+       s.SURNAME,
+       s.DATE_BIRTH,
+       h.NAME
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s.SCORE > 4 AND
+      h.RISK > 0.9
+--4. Вывести фамилию, имя, зачетку, дату рождения, название хобби и длительность в месяцах, для всех завершенных хобби.
+SELECT s.N_Z,
+       s.NAME,
+       s.SURNAME,
+       h.NAME,
+       MONTHS_BETWEEN(s_h.DATE_FINISH, s_h.DATE_START) as  month
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s_h.DATE_FINISH IS NOT NULL
+--5. Вывести фамилию, имя, зачетку, дату рождения студентов, которым исполнилось N полных лет на текущую дату, 
+--    и которые имеют более 1 действующего хобби.
+SELECT s.N_Z,
+       s.NAME,
+       s.SURNAME,
+       h.NAME,
+       to_char(sysdate, 'YYYY') - to_char(DATE_BIRTH, 'YYYY') as years
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      --years = :YEARS; почему нет?
+      to_char(sysdate, 'YYYY') - to_char(DATE_BIRTH, 'YYYY')= :YEARS;
+
+--6. Найти средний балл в каждой группе, учитывая только баллы студентов, которые имеют хотя бы одно действующее хобби.
+SELECT s.N_GROUP, --не работает
+       AVG(s.SCORE) as AVG_score
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s_h.HOBBY_ID IS NOT NULL
+GROUP BY s.N_GROUP 
+--7. Найти название, риск, длительность в месяцах самого продолжительного хобби из действующих, 
+--    указав номер зачетки студента и номер его группы.
+SELECT s.N_Z,
+       s.N_GROUP,
+       h.NAME,
+       h.RISK,
+       MAX(MONTHS_BETWEEN(s_h.DATE_FINISH, s_h.DATE_START)) as MAX_month
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s_h.HOBBY_ID IS NOT NULL
+GROUP BY s.N_Z,
+         s.N_GROUP,
+         h.NAME,
+         h.RISK
+ORDER BY MAX_month DESC FETCH FIRST 1 ROWS ONLY
+--8. Найти все хобби, которыми увлекаются студенты, имеющие максимальный балл.
+SELECT s.N_Z,
+       h.NAME
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s.SCORE = ( SELECT MAX(SCORE) 
+                  FROM STUDENTS )
+--9. Найти все действующие хобби, которыми увлекаются троечники 2-го курса.
+SELECT h.NAME,
+       s.N_GROUP,
+       s.SCORE
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s_h.DATE_FINISH IS NULL AND
+      s.SCORE BETWEEN 2.5 AND 3.5 AND
+      s.N_GROUP like '2%';
+--10. Найти номера курсов, на которых студенты имеют в среднем более одного действующего хобби.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
