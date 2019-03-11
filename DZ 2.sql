@@ -156,32 +156,54 @@ FROM STUDENTS s,
 WHERE s.N_Z = s_h.N_Z AND
       s_h.HOBBY_ID = h.ID;
 --2. Вывести информацию о студенте, занимающимся хобби самое продолжительное время.
--- во-первых в group by тут никакого смысла
--- во-вторых запрос выводит студента, который раньше всех начал заниматься хобби, а не самое продолжительное время
-SELECT s.NAME,
+select *
+from
+(SELECT s.NAME,
        s.SURNAME,
-       s_h.DATE_START
+       s_h.DATE_START,
+ CASE
+  WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
+  WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.DATE_FINISH - s_h.DATE_START
+ END as days
 FROM STUDENTS s,
      STUDENTS_HOBBIES s_h
-WHERE s.N_Z = s_h.N_Z
-GROUP BY s.NAME, s.SURNAME, s_h.DATE_START
-ORDER BY MIN(s_h.DATE_START) ASC FETCH FIRST 1 ROWS ONLY
+WHERE s.N_Z = s_h.N_Z)
+where days = (
+ SELECT 
+  CASE
+   WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.date_finish - s_h.date_start
+   WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.date_start
+  END as days 
+ FROM STUDENTS_HOBBIES s_h
+ ORDER BY days DESC FETCH FIRST 1 ROWS ONLY)
 --3. Вывести имя, фамилию, номер зачетки и дату рождения для студентов, средний балл которых выше среднего, 
 --     а риск всех хобби, которыми он занимается в данный момент больше 0.9.
 -- условие на средний балл надо не прибить гвоздями, а именно посчитать средний
 -- надо посчитать сумму всех рисков, а не просто 0.9
-SELECT s.N_Z,
+SELECT s_h.N_Z,
        s.NAME,
        s.SURNAME,
        s.DATE_BIRTH,
-       h.NAME
+       h.NAME,
+       SUM(RISK) AS SUM_RISK
+FROM STUDENTS s
+INNER JOIN STUDENTS_HOBBIES s_h on s.N_Z = s_h.N_Z
+INNER JOIN HOBBIES h on h.ID = s_h.HOBBY_ID
+where S.SCORE >= (SELECT AVG(SCORE) FROM STUDENTS) AND
+      h.RISK > 9
+GROUP BY S_H.N_Z
+ORDER BY S_H.N_Z;
+
+--Сумма рисков хобби каждого студента, 
+SELECT S_H.N_Z,
+       SUM(RISK) 
 FROM STUDENTS s,
      STUDENTS_HOBBIES s_h,
      HOBBIES h
 WHERE s.N_Z = s_h.N_Z AND
-      s_h.HOBBY_ID = h.ID AND
-      s.SCORE > 4 AND
-      h.RISK > 0.9
+      s_h.HOBBY_ID = h.ID
+GROUP BY S_H.N_Z
+ORDER BY S_H.N_Z;
 --4. Вывести фамилию, имя, зачетку, дату рождения, название хобби и длительность в месяцах, для всех завершенных хобби.
 SELECT s.N_Z,
        s.NAME,
