@@ -218,37 +218,26 @@ WHERE s.N_Z = s_h.N_Z AND
       s_h.DATE_FINISH IS NOT NULL
 --5. Вывести фамилию, имя, зачетку, дату рождения студентов, которым исполнилось N полных лет на текущую дату, 
 --    и которые имеют более 1 действующего хобби.
-
 SELECT s.N_Z,
        s.NAME,
        s.SURNAME,
-       h.NAME,
        to_char(sysdate, 'YYYY') - to_char(DATE_BIRTH, 'YYYY') as years
 FROM STUDENTS s,
-     STUDENTS_HOBBIES s_h,
-     HOBBIES h
+     STUDENTS_HOBBIES s_h
 WHERE s.N_Z = s_h.N_Z AND
-      s_h.HOBBY_ID = h.ID AND
-      --years = :YEARS; почему нет? Потому что select срабатывает после where
-      -- нет условия про одно действующее хобби
-      to_char(sysdate, 'YYYY') - to_char(DATE_BIRTH, 'YYYY') >= :YEARS;
-
+      s_h.HOBBY_ID IS NOT NULL AND
+      to_char(sysdate, 'YYYY') - to_char(DATE_BIRTH, 'YYYY') >= :YEARS
+ORDER BY S.N_Z;
 --6. Найти средний балл в каждой группе, учитывая только баллы студентов, которые имеют хотя бы одно действующее хобби.
--- нет смысла тащить в запросе таблицу хобби - это всё доп. вычисления, которые замедляют запрос (в 5 тоже кстати).
--- нет условия про "действующее хобби"
-SELECT s.N_GROUP, --не работает
+SELECT s.N_GROUP, 
        AVG(s.SCORE) as AVG_score
 FROM STUDENTS s,
-     STUDENTS_HOBBIES s_h,
-     HOBBIES h
+     STUDENTS_HOBBIES s_h
 WHERE s.N_Z = s_h.N_Z AND
-      s_h.HOBBY_ID = h.ID AND
-      s_h.HOBBY_ID IS NOT NULL
+      S_H.DATE_FINISH IS NOT NULL
 GROUP BY s.N_GROUP 
 --7. Найти название, риск, длительность в месяцах самого продолжительного хобби из действующих, 
 --    указав номер зачетки студента и номер его группы.
--- нет условия про "из действующих"
--- max & group by тут нет необходимости использовать
 SELECT s.N_Z,
        s.N_GROUP,
        h.NAME,
@@ -259,12 +248,11 @@ FROM STUDENTS s,
      HOBBIES h
 WHERE s.N_Z = s_h.N_Z AND
       s_h.HOBBY_ID = h.ID AND
-      s_h.HOBBY_ID IS NOT NULL
+      s_h.DATE_FINISH IS NOT NULL
 GROUP BY s.N_Z,
-         s.N_GROUP,
-         h.NAME,
-         h.RISK
-ORDER BY MAX_month DESC FETCH FIRST 1 ROWS ONLY
+       s.N_GROUP,
+       h.NAME,
+       h.RISK;
 --8. Найти все хобби, которыми увлекаются студенты, имеющие максимальный балл.
 SELECT s.N_Z,
        h.NAME
@@ -286,6 +274,7 @@ WHERE s.N_Z = s_h.N_Z AND
       s_h.HOBBY_ID = h.ID AND
       s_h.DATE_FINISH IS NULL AND
       s.SCORE BETWEEN 2.5 AND 3.5 AND
+	  s_h.DATE_FINISH IS NOT NULL
       s.N_GROUP like '2%';
 --10. Найти номера курсов, на которых студенты имеют в среднем более одного действующего хобби.
 
