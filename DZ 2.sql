@@ -178,32 +178,26 @@ where days = (
  ORDER BY days DESC FETCH FIRST 1 ROWS ONLY)
 --3. Вывести имя, фамилию, номер зачетки и дату рождения для студентов, средний балл которых выше среднего, 
 --     а риск всех хобби, которыми он занимается в данный момент больше 0.9.
--- условие на средний балл надо не прибить гвоздями, а именно посчитать средний
--- надо посчитать сумму всех рисков, а не просто 0.9
-SELECT s_h.N_Z,
+SELECT s.N_Z,
        s.NAME,
        s.SURNAME,
        s.DATE_BIRTH,
-       h.NAME,
-       SUM(RISK) AS SUM_RISK
+       s_r.sum_risk 
 FROM STUDENTS s
-INNER JOIN STUDENTS_HOBBIES s_h on s.N_Z = s_h.N_Z
-INNER JOIN HOBBIES h on h.ID = s_h.HOBBY_ID
-where S.SCORE >= (SELECT AVG(SCORE) FROM STUDENTS) AND
-      h.RISK > 9
-GROUP BY S_H.N_Z
-ORDER BY S_H.N_Z;
-
---Сумма рисков хобби каждого студента, 
+INNER JOIN ( 
 SELECT S_H.N_Z,
-       SUM(RISK) 
+       SUM(RISK) as sum_risk
 FROM STUDENTS s,
      STUDENTS_HOBBIES s_h,
      HOBBIES h
 WHERE s.N_Z = s_h.N_Z AND
-      s_h.HOBBY_ID = h.ID
+      s_h.HOBBY_ID = h.ID AND
+      s_h.DATE_FINISH IS NULL 
 GROUP BY S_H.N_Z
-ORDER BY S_H.N_Z;
+ORDER BY S_H.N_Z
+) s_r on s_r.n_z = s.n_z
+where S.SCORE >= (SELECT AVG(SCORE) FROM STUDENTS) AND
+      s_r.sum_risk >= 9
 --4. Вывести фамилию, имя, зачетку, дату рождения, название хобби и длительность в месяцах, для всех завершенных хобби.
 SELECT s.N_Z,
        s.NAME,
@@ -276,7 +270,44 @@ WHERE s.N_Z = s_h.N_Z AND
       s.SCORE BETWEEN 2.5 AND 3.5 AND
 	  s_h.DATE_FINISH IS NOT NULL
       s.N_GROUP like '2%';
---10. Найти номера курсов, на которых студенты имеют в среднем более одного действующего хобби.
+--10. Найти номера курсов, на которых более 50% студентов имеют более одного действующего хобби.
+SELECT T1.COURSE
+FROM (
+SELECT SUBSTR(S.N_GROUP,1,1) AS COURSE,
+       COUNT(DISTINCT S.N_Z) AS SN
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h
+WHERE s.N_Z = s_h.N_Z AND
+      S_H.DATE_FINISH IS NULL
+GROUP BY SUBSTR(S.N_GROUP,1,1)
+) T1
+INNER JOIN(
+SELECT SUBSTR(S.N_GROUP,1,1) AS COURSE,
+       COUNT(S.N_Z) SC
+FROM STUDENTS S
+GROUP BY SUBSTR(S.N_GROUP,1,1)
+) T2 ON T2.COURSE = T1.COURSE
+WHERE T1.SN/T2.SC > 0.5
+--11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
