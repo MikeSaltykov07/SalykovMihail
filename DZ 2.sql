@@ -331,7 +331,7 @@ FROM STUDENTS s,
      HOBBIES h
 WHERE s.N_Z = s_h.N_Z AND
       s_h.HOBBY_ID = h.ID AND
-      S.SCORE BETWEEN 3 AND 5 AND
+      S.SCORE BETWEEN 4.5 AND 5 AND
       s_h.DATE_FINISH IS NOT NULL
 )
 -- почему при сортировке исчезает 3 курс?
