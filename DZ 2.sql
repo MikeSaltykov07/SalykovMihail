@@ -139,12 +139,13 @@ ORDER BY SCORE DESC FETCH FIRST 1 ROWS ONLY;
 --11. Аналогично 10 заданию, но вывести в одном запросе для каждой группы студента с максимальным баллом.
 SELECT *
 FROM ( SELECT N_GROUP,
-              MAX(SCORE) as MAX_score,
+              NAME,
+              MAX(SCORE) as MAX_score
        FROM STUDENTS
-       GROUP BY N_GROUP
+       GROUP BY N_GROUP, 
+	            NAME
      )
-WHERE N_GROUP AND
-      MAX_score = STUDENTS.SCORE
+WHERE MAX_score = (SELECT SCORE FROM STUDENTS ORDER BY SCORE DESC FETCH FIRST 1 ROWS ONLY) 
 --3) Многотабличные запросы
 --1. Вывести все имена и фамилии студентов, и название хобби, которым занимается этот студент.
 SELECT s.NAME,
@@ -288,11 +289,54 @@ FROM STUDENTS S
 GROUP BY SUBSTR(S.N_GROUP,1,1)
 ) T2 ON T2.COURSE = T1.COURSE
 WHERE T1.SN/T2.SC > 0.5
---11
-
-
-
-
+--11. Вывести номера групп, в которых не менее 60% студентов имеют балл не ниже 4.
+SELECT T1.N_GROUP
+FROM ( 
+SELECT N_GROUP,
+       COUNT(N_Z)  COUNT --почему as можно пропускать?
+FROM STUDENTS
+WHERE SCORE >=4
+GROUP BY N_GROUP
+ORDER BY N_GROUP
+) T1
+INNER JOIN(
+SELECT N_GROUP,
+       COUNT(N_GROUP)  COUNT
+FROM STUDENTS
+GROUP BY N_GROUP
+ORDER BY N_GROUP
+) T2 ON T2.N_GROUP= T1.N_GROUP
+WHERE T1.COUNT/T2.COUNT > 0.6
+--12. Для каждого курса подсчитать количество различных действующих хобби на курсе.
+SELECT SUBSTR(S.N_GROUP,1,1),
+        COUNT(DISTINCT H.NAME)
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      s_h.DATE_FINISH IS NULL
+GROUP BY SUBSTR(S.N_GROUP,1,1)
+--13. Вывести номер зачётки, фамилию и имя, дату рождения и номер курса для всех отличников, не имеющих хобби. 
+--     Отсортировать данные по возрастанию в пределах курса по убыванию даты рождения.
+SELECT *
+FROM (
+SELECT S.N_Z,
+       S.NAME,
+       S.SURNAME,
+       S.DATE_BIRTH,
+       SUBSTR(S.N_GROUP,1,1) COURSE
+FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h,
+     HOBBIES h
+WHERE s.N_Z = s_h.N_Z AND
+      s_h.HOBBY_ID = h.ID AND
+      S.SCORE BETWEEN 3 AND 5 AND
+      s_h.DATE_FINISH IS NOT NULL
+)
+-- почему при сортировке исчезает 3 курс?
+ORDER BY COURSE,
+         DATE_BIRTH DESC
 
 
 
