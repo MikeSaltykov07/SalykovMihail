@@ -325,19 +325,64 @@ SELECT S.N_Z,
        S.DATE_BIRTH,
        SUBSTR(S.N_GROUP,1,1) COURSE
 FROM STUDENTS s,
-     STUDENTS_HOBBIES s_h,
-     HOBBIES h
+     STUDENTS_HOBBIES s_h
 WHERE s.N_Z = s_h.N_Z AND
-      s_h.HOBBY_ID = h.ID AND
       S.SCORE BETWEEN 4.5 AND 5 AND
       s_h.DATE_FINISH IS NOT NULL
--- почему при сортировке исчезает 3 курс?
 ORDER BY COURSE,
          DATE_BIRTH DESC
 
 	-- тут нет смысла подзапрос делать. Order by выполняется уже после select, поэтому переименование сработает
 	-- по сортировке: там по умолчанию 10 строк выводит, может не влезло на экран? :D (можно поменять слева сверху Rows)
 
+--14.Создать представление, в котором отображается вся информация о студентах, 
+--    которые продолжают заниматься хобби в данный момент и занимаются им как минимум 5 лет.
+CREATE VIEW STUDENTS_HOBBIE AS
+ SELECT S.*
+ FROM STUDENTS s,
+     STUDENTS_HOBBIES s_h
+ WHERE s.N_Z = s_h.N_Z AND
+       s_h.DATE_FINISH IS NULL AND
+       TO_CHAR(SYSDATE, 'YYYY') - TO_CHAR(S_H.DATE_START, 'YYYY') > 5 
+WITH CHECK OPTION;
+--15. Для каждого хобби вывести количество людей, которые им занимаются.
+SELECT H.NAME, 
+       H_C.COUNT AS STUDENTS_COUNT
+FROM (
+SELECT S_H.HOBBY_ID ID, 
+       COUNT(s.N_Z) COUNT
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+ORDER BY S_H.HOBBY_ID
+) H_C
+INNER JOIN HOBBIES H ON H.ID = H_C.ID;
+--16. Вывести ИД самого популярного хобби.
+SELECT H.NAME
+FROM (
+SELECT S_H.HOBBY_ID ID, 
+       COUNT(s.N_Z) COUNT
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+ORDER BY S_H.HOBBY_ID
+) H_C
+INNER JOIN HOBBIES H ON H.ID = H_C.ID
+WHERE H_C.COUNT = (
+SELECT COUNT
+FROM (
+SELECT S_H.HOBBY_ID ID, 
+       COUNT(s.N_Z) COUNT
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+ORDER BY S_H.HOBBY_ID
+) H_C
+ ORDER BY COUNT DESC FETCH FIRST 1 ROWS ONLY
+)
 
 
 
