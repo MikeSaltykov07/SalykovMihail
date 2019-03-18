@@ -343,9 +343,20 @@ CREATE VIEW STUDENTS_HOBBIE AS
      STUDENTS_HOBBIES s_h
  WHERE s.N_Z = s_h.N_Z AND
        s_h.DATE_FINISH IS NULL AND
-       TO_CHAR(SYSDATE, 'YYYY') - TO_CHAR(S_H.DATE_START, 'YYYY') > 5 
+       TO_CHAR(SYSDATE, 'YYYY') - TO_CHAR(S_H.DATE_START, 'YYYY') > 5 -- 01.01.2019 и 31.01.2013. 
+       -- Для разницы в годах лучше использовать month_between, а кол-во месяцев в году известно
 WITH CHECK OPTION;
 --15. Для каждого хобби вывести количество людей, которые им занимаются.
+
+-- Слишком усложнил)
+-- Нам надо вывести хобби и количество людей
+
+Select H.NAME,
+       count(*) as count_hobbies
+FROM HOBBIES H
+INNER JOIN STUDENTS_HOBBIES S_H on H.id = S_H.HOBBY_ID
+GROUP BY H.NAME -- Всё )
+
 SELECT H.NAME, 
        H_C.COUNT AS STUDENTS_COUNT
 FROM (
@@ -359,6 +370,14 @@ ORDER BY S_H.HOBBY_ID
 ) H_C
 INNER JOIN HOBBIES H ON H.ID = H_C.ID;
 --16. Вывести ИД самого популярного хобби.
+
+-- Опять усложнено(
+
+SELECT s_h.hobby_id
+FROM STUDENTS_HOBBIES s_h
+GROUP BY s_h.hobby_id
+HAVING count(*) = (SELECT max(count(*)) from STUDENTS_HOBBIES$ s_h group by s_h.hobby_id)
+
 SELECT H.NAME
 FROM (
 SELECT S_H.HOBBY_ID ID, 
@@ -379,6 +398,9 @@ GROUP BY S_H.HOBBY_ID
  ORDER BY COUNT(s.N_Z) DESC FETCH FIRST 1 ROWS ONLY
 )
 --17. Вывести всю информацию о студентах, занимающихся самым популярным хобби.
+
+-- Ок, но от 1 вложенности точно можно избавиться
+
 SELECT S.*
 FROM STUDENTS S
 INNER JOIN (
@@ -404,7 +426,10 @@ INNER JOIN STUDENTS_HOBBIES S_H ON S_H.HOBBY_ID = P_H.HOBBY_ID
 WHERE s_h.DATE_FINISH IS NULL
 ORDER BY S_H.N_Z 
 ) H_Z ON H_Z.N_Z = S.N_Z
+
 --18. Вывести ИД 3х хобби с максимальным риском.
+
+-- тут же запрос на 1 таблицу без соединений( поправь
 SELECT H.ID
 FROM HOBBIES H
 INNER JOIN (
@@ -413,40 +438,42 @@ SELECT H.ID,
 FROM HOBBIES H
  ORDER BY H.RISK DESC FETCH FIRST 3 ROWS ONLY
 ) M_R ON M_R.ID = H.ID
+
 --19. Вывести 10 студентов, которые занимаются одним (или несколькими) хобби самое продолжительно время.
+
+-- max можно так использовать
+-- else - поприятнее выглядеть будет :D
+
+
 SELECT S.*
 FROM STUDENTS S
-INNER JOIN (
-SELECT D_N.N_Z, D_N.DAYS
-FROM (
-SELECT D.N_Z,
-       MAX(D.DAYS) AS DAYS
-FROM (
-SELECT DISTINCT N_Z,
- CASE
-  WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
-  WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.DATE_FINISH - s_h.DATE_START
- END DAYS
-FROM STUDENTS_HOBBIES S_H
-ORDER BY N_Z
-) D 
-GROUP BY D.N_Z
-ORDER BY D.N_Z
-) D_N
-INNER JOIN ( 
-SELECT DISTINCT
- CASE
-  WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
-  WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.DATE_FINISH - s_h.DATE_START
- END DAYS
-FROM STUDENTS_HOBBIES S_H
-ORDER BY DAYS DESC FETCH FIRST 10 ROWS ONLY
-) D ON D.DAYS = D_N.DAYS
-ORDER BY D.DAYS DESC FETCH FIRST 10 ROWS ONLY
-) N ON N.N_Z = S.N_Z
+INNER JOIN
+  (SELECT D_N.N_Z,
+          D_N.DAYS
+   FROM
+     (SELECT DISTINCT N_Z,
+                         max(CASE
+                             WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
+                             ELSE s_h.DATE_FINISH - s_h.DATE_START
+                         END) DAYS
+         FROM STUDENTS_HOBBIES S_H
+         ORDER BY N_Z
+      ORDER BY D.N_Z) D_N
+   INNER JOIN
+     (SELECT DISTINCT CASE
+                          WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
+                          ELSE s_h.DATE_FINISH - s_h.DATE_START
+                      END DAYS
+      FROM STUDENTS_HOBBIES S_H
+      ORDER BY DAYS DESC FETCH FIRST 10 ROWS ONLY) D ON D.DAYS = D_N.DAYS
+   ORDER BY D.DAYS DESC FETCH FIRST 10 ROWS ONLY) N ON N.N_Z = S.N_Z
 ORDER BY S.N_Z
+
 --20. Вывести номера групп (без повторений), 
 --     в которых учатся студенты из предыдущего запроса.
+
+-- лучше сделать предыдущий представлением и используй её
+
 SELECT DISTINCT S.N_GROUP
 FROM (
 SELECT S.*
@@ -481,8 +508,12 @@ ORDER BY D.DAYS DESC FETCH FIRST 10 ROWS ONLY
 ) N ON N.N_Z = S.N_Z
 ORDER BY S.N_Z
 ) S
+
 --21. Создать представление, которое выводит номер зачетки, 
 --     имя и фамилию студентов, отсортированных по убыванию среднего балла.
+
+-- эм, зачем вложенность?
+
 CREATE VIEW STUDENT AS
  SELECT *
  FROM (
@@ -492,6 +523,9 @@ CREATE VIEW STUDENT AS
  )
 WITH CHECK OPTION;
 --22. Представление: найти каждое популярное хобби на каждом курсе.
+
+-- проверить позже(22-25)
+
 CREATE VIEW CURSE_HOBBY_TOP AS
 SELECT *
 FROM (
@@ -533,6 +567,7 @@ INNER JOIN HOBBIES H ON H.ID = TT1.HOBBY_ID
 ORDER BY CURSE
 ) TTT3
 WITH CHECK OPTION;
+
 --23. Представление: найти хобби с максимальным риском среди 
 --      самых популярных хобби на 2 курсе.
 CREATE  VIEW RISK_HOBBY_CURSE_2 AS
@@ -623,7 +658,7 @@ GROUP BY S_H.HOBBY_ID
 ) T1 ON T1.ID = H.ID
 ) TT1
 WITH CHECK OPTION;
---26. Создать обновляемое представление.
+--26. Создать обновляемое представление. +
 CREATE OR REPLACE VIEW S AS
 SELECT N_Z, NAME
 FROM STUDENTS
@@ -633,6 +668,9 @@ WITH CHECK OPTION;
 --      чьё имя начинается на А (Алексей, Алина, Артур, Анджела) 
 --      найти то, что указано в задании. Вывести на экран тех, 
 --      максимальный балл которых больше 3.6
+
+-- опять, тут спокойно можно без вложенности, не надо так усложнять(
+
 SELECT T2.ABC, MAX(T1.SCORE) MAX, AVG(T1.SCORE) AVG, MIN(T1.SCORE) MIN
 FROM (
 SELECT SUBSTR(NAME,1,1) ABC, SCORE
@@ -647,12 +685,16 @@ ORDER BY ABC
 GROUP BY T2.ABC
 HAVING MAX(T1.SCORE) > 3.6
 ORDER BY T2.ABC
+
 --28. Для каждой фамилии на курсе вывести максимальный и минимальный 
 --     средний балл. (Например, в университете учатся 4 Иванова 
 --     (1-2-3-4). 1-2-3 учатся на 2 курсе и имеют средний балл 
 --      4.1, 4, 3.8 соответственно, а 4 Иванов учится на 3 курсе и 
 --      имеет балл 4.5. На экране должно быть следующее: 2 Иванов 
 --      4.1 3.8 3 Иванов 4.5 4.5
+
+-- аналогично 27, тут только меняется группировка
+
 SELECT T1.*
 FROM (
 SELECT CURSE, SURNAME, MAX(SCORE), MIN(SCORE)
@@ -666,8 +708,13 @@ INNER JOIN (
 SELECT DISTINCT SUBSTR(N_GROUP,1,1) CURSE
 FROM STUDENTS
 ) T2 ON T2. CURSE = T1.CURSE
+
 --29. Для каждого года рождения подсчитать количество хобби, 
 --     которыми занимаются или занимались студенты.
+
+-- тебя сильно переклинило на вложенности после прошлой пары :D
+-- ну ничо, упростить)
+
 SELECT T1.YEAR, COUNT(T1.HOBBY_ID) COUNT_HOBBIES
 FROM (
 SELECT TO_CHAR(DATE_BIRTH, 'YYYY') YEAR, T.HOBBY_ID
