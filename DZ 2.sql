@@ -535,6 +535,178 @@ ORDER BY CURSE
 WITH CHECK OPTION;
 --23. Представление: найти хобби с максимальным риском среди 
 --      самых популярных хобби на 2 курсе.
+CREATE  VIEW RISK_HOBBY_CURSE_2 AS
+SELECT *
+FROM (
+SELECT H.NAME TOP_HOBBY_CURSE_2 
+FROM HOBBIES H
+INNER JOIN (
+SELECT TT1.HOBBY_ID ID
+FROM (
+SELECT CURSE,
+       COUNT(CURSE) COUNT,
+       HOBBY_ID
+FROM (
+SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
+       S_H.HOBBY_ID HOBBY_ID
+FROM STUDENTS S
+INNER JOIN STUDENTS_HOBBIES S_H ON s_H.N_Z = s.N_Z 
+) T1
+GROUP BY HOBBY_ID, CURSE
+HAVING CURSE = 2
+ORDER BY HOBBY_ID
+) TT1
+WHERE TT1.COUNT = (
+SELECT COUNT(s.N_Z)
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+ ORDER BY COUNT(s.N_Z) DESC FETCH FIRST 1 ROWS ONLY
+)
+) TTT1 ON TTT1.ID = H.ID
+ ORDER BY H.RISK DESC FETCH FIRST 1 ROWS ONLY
+) TTTT1
+WITH CHECK OPTION;
+--24. Представление: для каждого курса подсчитать количество 
+--      студентов на курсе и количество отличников.
+CREATE VIEW CURSE_COUNT_EXC AS
+SELECT *
+FROM (
+SELECT TT1.*,
+       TT2.COUNT_EXC
+FROM (
+SELECT CURSE,
+       COUNT(N_Z) COUNT
+FROM (
+SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
+       S.N_Z
+FROM STUDENTS S
+) T1
+GROUP BY CURSE
+) TT1
+INNER JOIN (
+SELECT CURSE,
+       COUNT(SCORE) COUNT_EXC
+FROM (
+SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
+       S.SCORE
+FROM STUDENTS S
+WHERE SCORE BETWEEN 4.5 AND 5
+) T2
+GROUP BY CURSE
+) TT2 ON TT2.CURSE = TT1.CURSE
+) TTT1
+WITH CHECK OPTION;
+--25. Представление: самое популярное хобби среди всех студентов.
+CREATE VIEW MOST_POP_HOBBY AS
+SELECT *
+FROM (
+SELECT H.NAME HOBBY
+FROM HOBBIES H
+INNER JOIN (
+SELECT S_H.HOBBY_ID ID,
+       COUNT(s.N_Z) COUNT
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+HAVING COUNT(S.N_Z) = (
+SELECT COUNT(s.N_Z)
+FROM STUDENTS_HOBBIES s_h,
+     STUDENTS s
+WHERE s_H.N_Z = s.N_Z 
+GROUP BY S_H.HOBBY_ID
+ ORDER BY COUNT(s.N_Z) DESC FETCH FIRST 1 ROWS ONLY
+) --условие
+ ORDER BY COUNT DESC FETCH FIRST 1 ROWS ONLY
+) T1 ON T1.ID = H.ID
+) TT1
+WITH CHECK OPTION;
+--26. Создать обновляемое представление.
+CREATE OR REPLACE VIEW S AS
+SELECT N_Z, NAME
+FROM STUDENTS
+WITH CHECK OPTION;
+--27. Для каждой буквы алфавита из имени найти максимальный, 
+--      средний и минимальный балл. (Т.е. среди всех студентов, 
+--      чьё имя начинается на А (Алексей, Алина, Артур, Анджела) 
+--      найти то, что указано в задании. Вывести на экран тех, 
+--      максимальный балл которых больше 3.6
+SELECT T2.ABC, MAX(T1.SCORE) MAX, AVG(T1.SCORE) AVG, MIN(T1.SCORE) MIN
+FROM (
+SELECT SUBSTR(NAME,1,1) ABC, SCORE
+FROM STUDENTS
+ORDER BY NAME
+) T1
+INNER JOIN (
+SELECT DISTINCT  SUBSTR(NAME,1,1) ABC
+FROM STUDENTS
+ORDER BY ABC
+) T2 ON T2.ABC = T1.ABC
+GROUP BY T2.ABC
+HAVING MAX(T1.SCORE) > 3.6
+ORDER BY T2.ABC
+--28. Для каждой фамилии на курсе вывести максимальный и минимальный 
+--     средний балл. (Например, в университете учатся 4 Иванова 
+--     (1-2-3-4). 1-2-3 учатся на 2 курсе и имеют средний балл 
+--      4.1, 4, 3.8 соответственно, а 4 Иванов учится на 3 курсе и 
+--      имеет балл 4.5. На экране должно быть следующее: 2 Иванов 
+--      4.1 3.8 3 Иванов 4.5 4.5
+SELECT T1.*
+FROM (
+SELECT CURSE, SURNAME, MAX(SCORE), MIN(SCORE)
+FROM (
+SELECT SUBSTR(N_GROUP,1,1) CURSE, SURNAME, SCORE
+FROM STUDENTS
+) T1
+GROUP BY CURSE, SURNAME
+) T1
+INNER JOIN (
+SELECT DISTINCT SUBSTR(N_GROUP,1,1) CURSE
+FROM STUDENTS
+) T2 ON T2. CURSE = T1.CURSE
+--29. Для каждого года рождения подсчитать количество хобби, 
+--     которыми занимаются или занимались студенты.
+SELECT T1.YEAR, COUNT(T1.HOBBY_ID) COUNT_HOBBIES
+FROM (
+SELECT TO_CHAR(DATE_BIRTH, 'YYYY') YEAR, T.HOBBY_ID
+FROM STUDENTS S
+INNER JOIN (
+SELECT S_H.N_Z, MAX(S_H.HOBBY_ID) HOBBY_ID
+FROM STUDENTS_HOBBIES S_H
+INNER JOIN (
+SELECT DISTINCT N_Z, HOBBY_ID
+FROM STUDENTS_HOBBIES
+) S ON S. N_Z = S_H.N_Z
+GROUP BY S_H.N_Z
+ORDER BY S_H.N_Z
+) T ON T.N_Z = S.N_Z
+) T1
+INNER JOIN (
+SELECT DISTINCT TO_CHAR(DATE_BIRTH, 'YYYY') YEAR
+FROM STUDENTS S
+ORDER BY YEAR
+) T2 ON T2.YEAR = T1.YEAR
+GROUP BY T1.YEAR
+ORDER BY T1.YEAR
+--30. Для каждой буквы алфавита в имени найти максимальный и 
+--     минимальный риск хобби.
+SELECT T1.ABC, MAX(T1.RISK) MAX_RISK, MIN(T1.RISK) MIN_RISK
+FROM (
+SELECT SUBSTR(S.NAME,1,1) ABC, H.RISK RISK
+FROM STUDENTS S
+INNER JOIN STUDENTS_HOBBIES S_H ON S.N_Z = S_H.N_Z
+INNER JOIN HOBBIES H ON H.ID = S_H.HOBBY_ID
+ORDER BY ABC
+) T1
+INNER JOIN (
+SELECT DISTINCT SUBSTR(S.NAME,1,1) ABC
+FROM STUDENTS S
+ORDER BY ABC
+) T2 ON T2. ABC = T1.ABC
+GROUP BY T1.ABC
+ORDER BY T1.ABC
 
 
 
