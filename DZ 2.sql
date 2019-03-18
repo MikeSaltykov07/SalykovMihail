@@ -443,28 +443,27 @@ FROM HOBBIES H
 
 -- max можно так использовать
 -- else - поприятнее выглядеть будет :D
-
+-- тут кстати в задании написано "занимаются"
 
 SELECT S.*
-FROM STUDENTS S
+FROM STUDENTS$ S
 INNER JOIN
   (SELECT D_N.N_Z,
           D_N.DAYS
    FROM
-     (SELECT DISTINCT N_Z,
+     (SELECT N_Z,
                          max(CASE
                              WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
                              ELSE s_h.DATE_FINISH - s_h.DATE_START
                          END) DAYS
-         FROM STUDENTS_HOBBIES S_H
-         ORDER BY N_Z
-      ORDER BY D.N_Z) D_N
+         FROM STUDENTS_HOBBIES$ S_H
+      GROUP BY N_Z) D_N
    INNER JOIN
      (SELECT DISTINCT CASE
                           WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
                           ELSE s_h.DATE_FINISH - s_h.DATE_START
                       END DAYS
-      FROM STUDENTS_HOBBIES S_H
+      FROM STUDENTS_HOBBIES$ S_H
       ORDER BY DAYS DESC FETCH FIRST 10 ROWS ONLY) D ON D.DAYS = D_N.DAYS
    ORDER BY D.DAYS DESC FETCH FIRST 10 ROWS ONLY) N ON N.N_Z = S.N_Z
 ORDER BY S.N_Z
@@ -524,52 +523,49 @@ CREATE VIEW STUDENT AS
 WITH CHECK OPTION;
 --22. Представление: найти каждое популярное хобби на каждом курсе.
 
--- проверить позже(22-25)
+-- тут имелось ввиду всё-таки
+-- курс и самое популярное хобби на нём
+-- T2 можно переделать так, дальше смотри)
 
 CREATE VIEW CURSE_HOBBY_TOP AS
 SELECT *
-FROM (
-SELECT TT1.CURSE,
-       H.NAME HOBBY_TOP
-FROM (
-SELECT CURSE,
-       COUNT(CURSE) COUNT,
-       HOBBY_ID
-FROM (
-SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
-       S_H.HOBBY_ID HOBBY_ID
-FROM STUDENTS S
-INNER JOIN STUDENTS_HOBBIES S_H ON s_H.N_Z = s.N_Z 
-) T1
-GROUP BY HOBBY_ID, CURSE
-ORDER BY CURSE
-) TT1
-
-INNER JOIN (
-SELECT CURSE,
-       MAX(COUNT) MAX
-FROM (
-SELECT CURSE,
-       COUNT(CURSE) COUNT,
-       HOBBY_ID
-FROM (
-SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
-       S_H.HOBBY_ID HOBBY_ID
-FROM STUDENTS S
-INNER JOIN STUDENTS_HOBBIES S_H ON s_H.N_Z = s.N_Z 
-) T1
-GROUP BY HOBBY_ID, CURSE
-ORDER BY CURSE
-) T2
-GROUP BY CURSE
-) TT2 ON TT2.MAX = TT1.COUNT
-INNER JOIN HOBBIES H ON H.ID = TT1.HOBBY_ID
-ORDER BY CURSE
-) TTT3
-WITH CHECK OPTION;
+FROM
+  (SELECT TT1.CURSE,
+          H.NAME HOBBY_TOP
+   FROM
+     (SELECT CURSE,
+             COUNT(CURSE) COUNT,
+                          HOBBY_ID
+      FROM
+        (SELECT SUBSTR(S.N_GROUP, 1, 1) CURSE,
+                S_H.HOBBY_ID HOBBY_ID
+         FROM STUDENTS$ S
+         INNER JOIN STUDENTS_HOBBIES$ S_H ON s_H.N_Z = s.N_Z) T1
+      GROUP BY HOBBY_ID,
+               CURSE
+      ORDER BY CURSE) TT1
+   INNER JOIN
+     (
+        SELECT CURSE,
+             MAX(COUNT) MAX
+        FROM
+            (
+                SELECT SUBSTR(S.N_GROUP, 1, 1) CURSE,
+                    S_H.HOBBY_ID HOBBY_ID, count(*) count
+                FROM STUDENTS$ S
+                INNER JOIN STUDENTS_HOBBIES$ S_H ON s_H.N_Z = s.N_Z
+                GROUP BY HOBBY_ID, SUBSTR(S.N_GROUP, 1, 1)
+            ) T2
+        GROUP BY CURSE
+      ) TT2 ON TT2.MAX = TT1.COUNT
+   INNER JOIN HOBBIES$ H ON H.ID = TT1.HOBBY_ID
+   ORDER BY CURSE) TTT3
 
 --23. Представление: найти хобби с максимальным риском среди 
 --      самых популярных хобби на 2 курсе.
+
+-- на паре обсудим
+
 CREATE  VIEW RISK_HOBBY_CURSE_2 AS
 SELECT *
 FROM (
@@ -605,6 +601,14 @@ GROUP BY S_H.HOBBY_ID
 WITH CHECK OPTION;
 --24. Представление: для каждого курса подсчитать количество 
 --      студентов на курсе и количество отличников.
+
+-- тяжко уже вникать. Но для запроса нужно:
+-- 1 вернуть курс и количество отличников на нём
+-- 2 вернуть курс и количество студентов на нём
+-- соединить
+-- вижу больше вложенности, все count() надо внутрь, где substr. Почти
+-- везде такая ошибка есть
+
 CREATE VIEW CURSE_COUNT_EXC AS
 SELECT *
 FROM (
@@ -633,7 +637,11 @@ GROUP BY CURSE
 ) TT2 ON TT2.CURSE = TT1.CURSE
 ) TTT1
 WITH CHECK OPTION;
+
 --25. Представление: самое популярное хобби среди всех студентов.
+
+-- зачем таблица студенты?
+
 CREATE VIEW MOST_POP_HOBBY AS
 SELECT *
 FROM (
