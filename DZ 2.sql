@@ -678,18 +678,18 @@ ORDER BY T1.ABC
 
 
 --4) Задания на изменение/удаление/добавление
---1. Удалите всех студентов с неуказанной датой рождения
+--1. ++ Удалите всех студентов с неуказанной датой рождения
 DELETE
 FROM STUDENTS$
 WHERE DATE_BIRTH IS NULL 
 
---2. Измените дату рождения всех студентов, с неуказанной датой 
+--2. ++ Измените дату рождения всех студентов, с неуказанной датой 
 --    рождения на 01-01-1999
 UPDATE STUDENTS$
  SET DATE_BIRTH = CAST('01-01-1999' AS DATE)
 WHERE DATE_BIRTH IS NULL
 
---3. Удалите из таблицы студента с номером зачётки 21
+--3. ++ Удалите из таблицы студента с номером зачётки 21
 DELETE
 FROM STUDENTS$
 WHERE N_Z = 21
@@ -701,23 +701,22 @@ UPDATE HOBBIES$
   WHERE ID = (SELECT HOBBY_ID
                    FROM STUDENTS_HOBBIES$
                    GROUP BY HOBBY_ID
-                   ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY --DISTINCT не работает
+                   ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY --DISTINCT не работает, для чего он?
              )
 
---5. Добавьте всем студентам, которые занимаются хотя бы 
+--5. ++ Добавьте всем студентам, которые занимаются хотя бы 
 --     одним хобби 0.01 балл
 UPDATE STUDENTS$
  SET SCORE = SCORE - 0.01
- WHERE N_Z = ( SELECT DISTINCT N_Z
+ WHERE N_Z IN ( SELECT DISTINCT N_Z
                 FROM STUDENTS_HOBBIES$
                 WHERE DATE_FINISH IS NOT NULL
  ) --Как это заставить работать
 
 --6. Удалите все завершенные хобби студентов
--- удалить все хобби которые count(*) = 0
--- удалить s_h где data_finish is not null
+-- удалить s_h где data_finish is not null <-- только это
 
---7. Добавьте студенту с n_z 4 хобби с id 5. 
+--7. ++ Добавьте студенту с n_z 4 хобби с id 5. 
 --     date_start - '15-11-2009, date_finish - null
 INSERT INTO STUDENTS_HOBBIES$ (ID, N_Z, HOBBY_ID, DATE_START, DATE_FINISH)
 VALUES (16, 4, 5, '15-11-2009', NULL)
