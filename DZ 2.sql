@@ -408,18 +408,14 @@ SELECT P_H.HOBBY_ID,
        S_H.N_Z 
 FROM (
 SELECT S_H.HOBBY_ID,
-       COUNT(s.N_Z)
-FROM STUDENTS_HOBBIES s_h,
-     STUDENTS s
-WHERE s_H.N_Z = s.N_Z 
+       COUNT(*)
+FROM STUDENTS_HOBBIES s_h
 GROUP BY S_H.HOBBY_ID
-HAVING COUNT(S.N_Z) = (
-SELECT COUNT(s.N_Z)
-FROM STUDENTS_HOBBIES s_h,
-     STUDENTS s
-WHERE s_H.N_Z = s.N_Z 
+HAVING COUNT(*) = (
+SELECT COUNT(*)
+FROM STUDENTS_HOBBIES s_h
 GROUP BY S_H.HOBBY_ID
- ORDER BY COUNT(s.N_Z) DESC FETCH FIRST 1 ROWS ONLY
+ ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY
 ) --условие
 ) P_H
 INNER JOIN STUDENTS_HOBBIES S_H ON S_H.HOBBY_ID = P_H.HOBBY_ID
@@ -432,12 +428,7 @@ ORDER BY S_H.N_Z
 -- тут же запрос на 1 таблицу без соединений( поправь
 SELECT H.ID
 FROM HOBBIES H
-INNER JOIN (
-SELECT H.ID,
-       H.RISK
-FROM HOBBIES H
  ORDER BY H.RISK DESC FETCH FIRST 3 ROWS ONLY
-) M_R ON M_R.ID = H.ID
 
 --19. Вывести 10 студентов, которые занимаются одним (или несколькими) хобби самое продолжительно время.
 
@@ -472,41 +463,11 @@ ORDER BY S.N_Z
 --     в которых учатся студенты из предыдущего запроса.
 
 -- лучше сделать предыдущий представлением и используй её
+CREATE VIEW N_GR AS
+--19
 
-SELECT DISTINCT S.N_GROUP
-FROM (
-SELECT S.*
-FROM STUDENTS S
-INNER JOIN (
-SELECT D_N.N_Z, D_N.DAYS
-FROM (
-SELECT D.N_Z,
-       MAX(D.DAYS) AS DAYS
-FROM (
-SELECT DISTINCT N_Z,
- CASE
-  WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
-  WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.DATE_FINISH - s_h.DATE_START
- END DAYS
-FROM STUDENTS_HOBBIES S_H
-ORDER BY N_Z
-) D 
-GROUP BY D.N_Z
-ORDER BY D.N_Z
-) D_N
-INNER JOIN ( 
-SELECT DISTINCT
- CASE
-  WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
-  WHEN s_h.DATE_FINISH IS NOT NULL THEN s_h.DATE_FINISH - s_h.DATE_START
- END DAYS
-FROM STUDENTS_HOBBIES S_H
-ORDER BY DAYS DESC FETCH FIRST 10 ROWS ONLY
-) D ON D.DAYS = D_N.DAYS
-ORDER BY D.DAYS DESC FETCH FIRST 10 ROWS ONLY
-) N ON N.N_Z = S.N_Z
-ORDER BY S.N_Z
-) S
+SELECT DISTINCT N_GROUP
+FROM N_GR
 
 --21. Создать представление, которое выводит номер зачетки, 
 --     имя и фамилию студентов, отсортированных по убыванию среднего балла.
@@ -604,30 +565,22 @@ WITH CHECK OPTION;
 CREATE VIEW CURSE_COUNT_EXC AS
 SELECT *
 FROM (
-SELECT TT1.*,
-       TT2.COUNT_EXC
+SELECT T1.*,
+       T2.COUNT_EXC
 FROM (
-SELECT CURSE,
-       COUNT(N_Z) COUNT
-FROM (
-SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
-       S.N_Z
-FROM STUDENTS S
+SELECT SUBSTR(N_GROUP,1,1) CURSE,
+       COUNT(*) COUNT
+FROM STUDENTS$
+GROUP BY SUBSTR(N_GROUP,1,1)
 ) T1
-GROUP BY CURSE
-) TT1
 INNER JOIN (
-SELECT CURSE,
-       COUNT(SCORE) COUNT_EXC
-FROM (
-SELECT SUBSTR(S.N_GROUP,1,1) CURSE,
-       S.SCORE
-FROM STUDENTS S
+SELECT SUBSTR(N_GROUP,1,1) CURSE,
+       COUNT(*) COUNT_EXC
+FROM STUDENTS$
 WHERE SCORE BETWEEN 4.5 AND 5
-) T2
-GROUP BY CURSE
-) TT2 ON TT2.CURSE = TT1.CURSE
-) TTT1
+GROUP BY SUBSTR(N_GROUP,1,1)
+) T2 ON T2.CURSE = T1.CURSE
+) T
 WITH CHECK OPTION;
 
 --25. Представление: самое популярное хобби среди всех студентов.
@@ -641,28 +594,26 @@ SELECT H.NAME HOBBY
 FROM HOBBIES H
 INNER JOIN (
 SELECT S_H.HOBBY_ID ID,
-       COUNT(s.N_Z) COUNT
-FROM STUDENTS_HOBBIES s_h,
-     STUDENTS s
-WHERE s_H.N_Z = s.N_Z 
+       COUNT(*) COUNT
+FROM STUDENTS_HOBBIES s_h
 GROUP BY S_H.HOBBY_ID
-HAVING COUNT(S.N_Z) = (
-SELECT COUNT(s.N_Z)
-FROM STUDENTS_HOBBIES s_h,
-     STUDENTS s
-WHERE s_H.N_Z = s.N_Z 
+HAVING COUNT(*) = (
+SELECT COUNT(*)
+FROM STUDENTS_HOBBIES s_h
 GROUP BY S_H.HOBBY_ID
- ORDER BY COUNT(s.N_Z) DESC FETCH FIRST 1 ROWS ONLY
+ ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY
 ) --условие
  ORDER BY COUNT DESC FETCH FIRST 1 ROWS ONLY
 ) T1 ON T1.ID = H.ID
 ) TT1
 WITH CHECK OPTION;
+
 --26. Создать обновляемое представление. +
 CREATE OR REPLACE VIEW S AS
 SELECT N_Z, NAME
 FROM STUDENTS
 WITH CHECK OPTION;
+
 --27. Для каждой буквы алфавита из имени найти максимальный, 
 --      средний и минимальный балл. (Т.е. среди всех студентов, 
 --      чьё имя начинается на А (Алексей, Алина, Артур, Анджела) 
@@ -726,17 +677,60 @@ ORDER BY T1.ABC
 
 
 
+--4) Задания на изменение/удаление/добавление
+--1. Удалите всех студентов с неуказанной датой рождения
+DELETE
+FROM STUDENTS$
+WHERE DATE_BIRTH IS NULL 
 
+--2. Измените дату рождения всех студентов, с неуказанной датой 
+--    рождения на 01-01-1999
+UPDATE STUDENTS$
+ SET DATE_BIRTH = CAST('01-01-1999' AS DATE)
+WHERE DATE_BIRTH IS NULL
 
+--3. Удалите из таблицы студента с номером зачётки 21
+DELETE
+FROM STUDENTS$
+WHERE N_Z = 21
 
+--4. Уменьшите риск хобби, которым занимается наибольшее 
+--    количество человек
+UPDATE HOBBIES$
+  SET RISK = RISK - 1
+  WHERE ID = (SELECT HOBBY_ID
+                   FROM STUDENTS_HOBBIES$
+                   GROUP BY HOBBY_ID
+                   ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY --DISTINCT не работает
+             )
 
+--5. Добавьте всем студентам, которые занимаются хотя бы 
+--     одним хобби 0.01 балл
+UPDATE STUDENTS$
+ SET SCORE = SCORE - 0.01
+ WHERE N_Z = ( SELECT DISTINCT N_Z
+                FROM STUDENTS_HOBBIES$
+                WHERE DATE_FINISH IS NOT NULL
+ ) --Как это заставить работать
 
+--6. Удалите все завершенные хобби студентов
+-- удалить все хобби которые count(*) = 0
+-- удалить s_h где data_finish is not null
 
+--7. Добавьте студенту с n_z 4 хобби с id 5. 
+--     date_start - '15-11-2009, date_finish - null
+INSERT INTO STUDENTS_HOBBIES$ (ID, N_Z, HOBBY_ID, DATE_START, DATE_FINISH)
+VALUES (16, 4, 5, '15-11-2009', NULL)
+ 
+ --8. Напишите запрос, который удаляет самую раннюю из студентов_хобби
+--      запись, в случае, если студент делал перерыв в хобби 
+--      (т.е. занимался одним и тем же несколько раз)
 
-
-
-
-
+SELECT N_Z 
+FROM STUDENTS_HOBBIES$
+GROUP BY N_Z
+HAVING COUNT(N_Z) > 1
+ORDER BY N_Z ) TWO ON TWO.N_Z =  S_H.N_Z
 
 
 
