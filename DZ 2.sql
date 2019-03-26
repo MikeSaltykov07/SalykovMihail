@@ -711,10 +711,14 @@ UPDATE STUDENTS$
  WHERE N_Z IN ( SELECT DISTINCT N_Z
                 FROM STUDENTS_HOBBIES$
                 WHERE DATE_FINISH IS NOT NULL
- ) --Как это заставить работать
+ ) 
 
 --6. Удалите все завершенные хобби студентов
 -- удалить s_h где data_finish is not null <-- только это
+
+DELETE 
+FROM STUDENTS_HOBBIES$
+WHERE DATE_FINISH IS NOT NULL
 
 --7. ++ Добавьте студенту с n_z 4 хобби с id 5. 
 --     date_start - '15-11-2009, date_finish - null
@@ -725,11 +729,35 @@ VALUES (16, 4, 5, '15-11-2009', NULL)
 --      запись, в случае, если студент делал перерыв в хобби 
 --      (т.е. занимался одним и тем же несколько раз)
 
-SELECT N_Z 
+SELECT DISTINCT T1.N_Z
+FROM (
+SELECT S_H.N_Z, S_H.HOBBY_ID, COUNT(S_H.HOBBY_ID) COUNT
+FROM STUDENTS_HOBBIES$ S_H
+INNER JOIN (
+SELECT N_Z
 FROM STUDENTS_HOBBIES$
 GROUP BY N_Z
 HAVING COUNT(N_Z) > 1
-ORDER BY N_Z ) TWO ON TWO.N_Z =  S_H.N_Z
+ORDER BY N_Z
+) S ON S.N_Z = S_H.N_Z
+GROUP BY S_H.N_Z, S_H.HOBBY_ID
+ORDER BY S_H.N_Z
+) T1
+
+INNER JOIN (
+SELECT S_H.N_Z, S_H.HOBBY_ID, COUNT(DISTINCT S_H.HOBBY_ID) COUNT
+FROM STUDENTS_HOBBIES$ S_H
+INNER JOIN (
+SELECT N_Z
+FROM STUDENTS_HOBBIES$
+GROUP BY N_Z
+HAVING COUNT(N_Z) > 1
+ORDER BY N_Z
+) S ON S.N_Z = S_H.N_Z
+GROUP BY S_H.N_Z, S_H.HOBBY_ID
+ORDER BY S_H.N_Z
+) T2 ON T2.N_Z = T1.N_Z
+WHERE T1.COUNT > T2.COUNT
 
 
 
