@@ -729,6 +729,9 @@ VALUES (16, 4, 5, '15-11-2009', NULL)
 --      запись, в случае, если студент делал перерыв в хобби 
 --      (т.е. занимался одним и тем же несколько раз)
 
+SELECT ID, N_Z, HOBBY_ID
+FROM STUDENTS_HOBBIES$
+WHERE N_Z IN (
 SELECT DISTINCT T1.N_Z
 FROM (
 SELECT S_H.N_Z, S_H.HOBBY_ID, COUNT(S_H.HOBBY_ID) COUNT
@@ -758,6 +761,12 @@ GROUP BY S_H.N_Z, S_H.HOBBY_ID
 ORDER BY S_H.N_Z
 ) T2 ON T2.N_Z = T1.N_Z
 WHERE T1.COUNT > T2.COUNT
+) AND 
+     DATE_FINISH IS NOT NULL
+ORDER BY DATE_START ASC
+
+-- выводит записи с разным ID и одинаковым N_Z и hobby_id 
+-- как оставить строку с меньшим ID для каждого N_Z и HOBBY_ID и удалить все остальные
 
 
 
