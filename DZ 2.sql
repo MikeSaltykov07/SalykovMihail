@@ -729,10 +729,12 @@ VALUES (16, 4, 5, '15-11-2009', NULL)
 --      запись, в случае, если студент делал перерыв в хобби 
 --      (т.е. занимался одним и тем же несколько раз)
 
-SELECT ID
+DELETE
 FROM STUDENTS_HOBBIES$
-WHERE N_Z AND DATA_FINISH IN (
-SELECT N_Z, MIN(DATE_FINISH) 
+WHERE ID IN (
+SELECT ID
+FROM (
+SELECT N_Z, MIN(ID) ID
 FROM STUDENTS_HOBBIES$
 WHERE N_Z IN (
 SELECT DISTINCT T1.N_Z
@@ -768,12 +770,47 @@ WHERE T1.COUNT > T2.COUNT
      DATE_FINISH IS NOT NULL
 GROUP BY N_Z
 ORDER BY N_z
+) T
 )
 
+--9. Поменяйте название хобби всем студентам, кто занимается футболом - 
+--      на бальные танцы, а кто баскетболом - на вышивание крестиком.
 
+--добавил хобби бальные танцы и вышивание крестиком
+UPDATE STUDENTS_HOBBIES$
+SET HOBBY_ID = CASE
+WHEN  HOBBY_ID = '1' THEN '9'
+ELSE '10'
+END 
+WHERE HOBBY_ID IN ('1', '3')
 
+--поменял названия хобби
+UPDATE HOBBIES$
+SET NAME = CASE
+WHEN  NAME = 'Баскетбол' THEN 'Вышивание крестиком'
+ELSE 'Бальные танцы'
+END WHERE NAME IN ('Футбол', 'Баскетбол')
 
+--10. Добавьте в таблицу хобби новое хобби с названием "Учёба"
+INSERT INTO HOBBIES$ (ID, NAME, RISK)
+VALUES (11, 'Учёба', .10)
 
+--11. У всех студентов, средний балл которых меньше 3.2 поменяйте 
+--     во всех хобби (если занимается чем-либо) и добавьте 
+--     (если ничем не занимается), что студент занимается 
+--     хобби из 10 задания
+
+--изменить если есть хобби
+UPDATE STUDENTS_HOBBIES$
+SET HOBBY_ID = '11'
+WHERE HOBBY_ID IN (
+SELECT HOBBY_ID
+FROM STUDENTS_HOBBIES$
+WHERE N_Z IN (
+SELECT N_Z
+FROM STUDENTS$
+WHERE SCORE < 3.2)
+)
 
 
 
