@@ -813,6 +813,88 @@ WHERE SCORE < 3.2)
 )
 
 
+--N_Z у кого нет хобби
+ INSERT INTO HOBBIES$ (ID, N_Z, HOBBY_ID, DATE_START, DATE_FINISH)
+VALUES (id, n_z, 11, '11-09-2018', null)
+--как соединить
+SELECT *
+FROM (
+SELECT N_Z
+FROM STUDENTS$
+WHERE SCORE < 3.2
+) G
+WHERE N_Z NOT IN (
+SELECT DISTINCT N_Z
+FROM STUDENTS_HOBBIES$ 
+WHERE N_Z IN (
+SELECT N_Z
+FROM STUDENTS$
+WHERE SCORE < 3.2)
+)
+
+--как соеднить два условия?
+
+--12. Переведите всех студентов не 4 курса на курс выше
+UPDATE STUDENTS$
+SET N_GROUP = N_GROUP + 1000 
+WHERE SUBSTR(N_GROUP,1,1) IN (
+SELECT SUBSTR(N_GROUP,1,1) CURSE
+FROM STUDENTS$
+WHERE SUBSTR(N_GROUP,1,1) < 4)
+
+--13. Удалите из таблицы студента с номером зачётки 2
+DELETE
+FROM STUDENTS$
+WHERE N_Z = 2
+
+--14. Измените средний балл у всех студентов, которые занимаются 
+--     хобби более 10 лет на 5.00
+UPDATE STUDENTS$
+SET SCORE = 5
+WHERE N_Z IN (
+SELECT N_Z
+FROM
+   (SELECT N_Z,
+                     max(CASE
+                             WHEN s_h.DATE_FINISH IS NULL THEN sysdate - s_h.DATE_START
+                             ELSE s_h.DATE_FINISH - s_h.DATE_START
+                         END) DAYS
+      FROM STUDENTS_HOBBIES$ S_H
+    GROUP BY N_Z) D_N
+WHERE DAYS > 3650 )
+
+--15. Удалите информацию о хобби, если студент начал им заниматься 
+--     раньше, чем родился
+DELETE 
+FROM STUDENTS_HOBBIES$
+WHERE ID IN (
+SELECT T2.ID
+FROM (
+SELECT N_Z, DATE_BIRTH AS D_B
+FROM STUDENTS$ ) T1
+INNER JOIN 
+           ( SELECT T.ID, G.*
+             FROM (
+                   SELECT S_H.N_Z, MIN(S_H.DATE_START) AS D_S
+                    FROM STUDENTS_HOBBIES$ S_H
+                   GROUP BY S_H.N_Z  ) G
+                     INNER JOIN (SELECT ID, N_Z FROM STUDENTS_HOBBIES$) T ON T.N_Z = G.N_Z
+                  ) T2 ON T2.N_Z = T1.N_Z
+WHERE T1.D_B > T2.D_S )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
