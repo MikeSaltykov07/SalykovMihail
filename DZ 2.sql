@@ -673,6 +673,93 @@ ORDER BY ABC
 GROUP BY T1.ABC
 ORDER BY T1.ABC
 
+--31. Для каждого месяца из даты рождения вывести средний балл 
+--     студентов, которые занимаются хобби с названием «Футбол»
+SELECT MM , AVG(SCORE)
+FROM (
+SELECT TO_CHAR(S.DATE_BIRTH, 'MM') MM, S.SCORE
+FROM STUDENTS$ S
+INNER JOIN STUDENTS_HOBBIES$ S_H ON S_H.N_Z = S.N_Z 
+INNER JOIN HOBBIES$ H ON H.ID = S_H.HOBBY_ID
+WHERE TO_CHAR(DATE_BIRTH, 'MM') IS NOT NULL AND
+H.NAME = 'Футбол'
+) T
+GROUP BY MM
+ORDER BY MM
+
+--32. Вывести информацию о студентах, которые занимались или занимаются 
+--      хотя бы 1 хобби в следующем формате: 
+--      Имя: Иван, фамилия: Иванов, группа: 1234
+SELECT NAME "Имя" , SURNAME "Фамилия", N_GROUP "группа"
+FROM STUDENTS$
+WHERE N_Z IN (
+SELECT DISTINCT N_Z
+FROM STUDENTS_HOBBIES$)
+
+--33. Найдите в фамилии в каком по счёту символа встречается «ов». 
+--     Если 0 (т.е. не встречается, то выведите на экран «не найдено».
+
+SELECT 
+    CASE
+       WHEN STR = '0' THEN 'Не найдено'
+       ELSE STR
+     END AS NUM
+FROM (
+      SELECT TO_CHAR(INSTR(SURNAME, 'ов')) STR
+      FROM STUDENTS$ 
+) T
+
+--34. Дополните фамилию справа символом # до 10 символов.
+SELECT RPAD(SURNAME, 10, '#')
+FROM STUDENTS$
+
+--35. При помощи функции удалите все символы # из предыдущего запроса.
+SELECT TRIM('#' FROM R)
+FROM (
+SELECT RPAD(SURNAME, 10, '#') R
+FROM STUDENTS$ ) T
+
+--36. Выведите на экран сколько дней в апреле 2018 года.
+-- В теории дожен работать; не работает
+SELECT  TO_CHAR(01-05-2018, 'DDD') - TO_CHAR(01-04-2018, 'DDD') 
+FROM DUAL
+
+--37. Выведите на экран какого числа будет ближайшая суббота.
+-- SELECT NEXT_DAY(SYSDATE,'Saturday') 
+SELECT sysdate + (7 - TO_CHAR(SYSDATE, 'D'))
+FROM DUAL
+
+--38. Выведите на экран век, а также какая сейчас 
+--       неделя года и день года.
+SELECT TRUNC(TO_CHAR(SYSDATE, 'YYYY')/100)+1 AS "ВЕК", TO_CHAR(SYSDATE, 'WW') AS week_year, TO_CHAR(SYSDATE, 'DDD') AS DAY_YEAR
+FROM DUAL
+
+--39. Выведите всех студентов, которые занимались или занимаются хотя 
+--      бы 1 хобби. Выведите на экран Имя, Фамилию, Названию хобби, 
+--      а также надпись «занимается», если студент продолжает 
+--      заниматься хобби в данный момент или «закончил», 
+--      если уже не занимает.
+SELECT S.NAME, S.SURNAME, H.NAME,
+   CASE 
+     WHEN S_H.DATE_FINISH IS NOT NULL THEN 'ЗАКОНЧИЛ'
+     WHEN S_H.DATE_FINISH IS NULL THEN 'ЗАНИМАЕТСЯ'
+   END AS HOBBY  
+FROM STUDENTS$ S
+INNER JOIN STUDENTS_HOBBIES$ S_H ON S_H.N_Z = S.N_Z 
+INNER JOIN HOBBIES$ H ON H.ID = S_H.HOBBY_ID
+
+--40. Для каждой группы вывести сколько студентов учится на 5,4,3,2. 
+--      Использовать обычное математическое округление. 
+--       Итоговый результат должен выглядеть примерно в таком виде:
+
+--НИЧЕГО невыходи =(
+
+
+
+
+
+
+
 
 
 
