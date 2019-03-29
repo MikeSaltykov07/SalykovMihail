@@ -594,22 +594,12 @@ GROUP BY TO_CHAR(DATE_BIRTH, 'YYYY')
 --     минимальный риск хобби.
 
 -- опять, что мешает всё сделать в T1 - сгруппировать и найти min, max
-
-SELECT T1.ABC, MAX(T1.RISK) MAX_RISK, MIN(T1.RISK) MIN_RISK
-FROM (
-SELECT SUBSTR(S.NAME,1,1) ABC, H.RISK RISK
+SELECT SUBSTR(S.NAME,1,1) ABC, MAX(H.RISK) MAX_RISK, MIN(H.RISK) MIN_RISK
 FROM STUDENTS S
 INNER JOIN STUDENTS_HOBBIES S_H ON S.N_Z = S_H.N_Z
 INNER JOIN HOBBIES H ON H.ID = S_H.HOBBY_ID
-ORDER BY ABC
-) T1
-INNER JOIN (
-SELECT DISTINCT SUBSTR(S.NAME,1,1) ABC
-FROM STUDENTS S
-ORDER BY ABC
-) T2 ON T2. ABC = T1.ABC
-GROUP BY T1.ABC
-ORDER BY T1.ABC
+GROUP BY SUBSTR(S.NAME,1,1)
+ORDER BY SUBSTR(S.NAME,1,1)
 
 --31. Для каждого месяца из даты рождения вывести средний балл 
 --     студентов, которые занимаются хобби с названием «Футбол»
@@ -618,24 +608,28 @@ ORDER BY T1.ABC
 -- select выполняется уже после group by
 -- но по TO_CHAR(S.DATE_BIRTH, 'MM') - спокойно, если с этим непонятно
 
-SELECT MM , AVG(SCORE)
-FROM (
-SELECT TO_CHAR(S.DATE_BIRTH, 'MM') MM, S.SCORE
+SELECT TO_CHAR(S.DATE_BIRTH, 'MM') MM, AVG(S.SCORE)
 FROM STUDENTS$ S
 INNER JOIN STUDENTS_HOBBIES$ S_H ON S_H.N_Z = S.N_Z 
 INNER JOIN HOBBIES$ H ON H.ID = S_H.HOBBY_ID
 WHERE TO_CHAR(DATE_BIRTH, 'MM') IS NOT NULL AND
 H.NAME = 'Футбол'
-) T
-GROUP BY MM
-ORDER BY MM
+GROUP BY TO_CHAR(S.DATE_BIRTH, 'MM')
+ORDER BY TO_CHAR(S.DATE_BIRTH, 'MM')
 
 --32. Вывести информацию о студентах, которые занимались или занимаются 
 --      хотя бы 1 хобби в следующем формате: 
 --      Имя: Иван, фамилия: Иванов, группа: 1234
 
 -- да, но лучше использовать обычный INNER JOIN
+SELECT S.NAME "Имя" , S.SURNAME "Фамилия", S.N_GROUP "группа"
+FROM STUDENTS$ S
+INNER JOIN (
+SELECT DISTINCT N_Z
+FROM STUDENTS_HOBBIES$
+) N ON N.N_Z = S.N_Z
 
+--
 SELECT NAME "Имя" , SURNAME "Фамилия", N_GROUP "группа"
 FROM STUDENTS$
 WHERE N_Z IN (
@@ -646,7 +640,14 @@ FROM STUDENTS_HOBBIES$)
 --     Если 0 (т.е. не встречается, то выведите на экран «не найдено».
 
 -- но тоже можно без подзапроса))
+SELECT 
+    CASE
+       WHEN TO_CHAR(INSTR(SURNAME, 'ов'))= '0' THEN 'Не найдено'
+       ELSE TO_CHAR(INSTR(SURNAME, 'ов'))
+     END AS NUM
+FROM STUDENTS$ 
 
+--
 SELECT 
     CASE
        WHEN STR = '0' THEN 'Не найдено'
@@ -672,7 +673,7 @@ FROM STUDENTS$ ) T
 
 -- нужно получить 2 даты. Делай не to_char, а to_date и просто разница между ними
 
-SELECT  TO_CHAR(01-05-2018, 'DDD') - TO_CHAR(01-04-2018, 'DDD') 
+SELECT  TO_DATE('01-05-2018') - TO_DATE('01-04-2018') 
 FROM DUAL
 
 --37. ++ Выведите на экран какого числа будет ближайшая суббота.
@@ -706,7 +707,14 @@ INNER JOIN HOBBIES$ H ON H.ID = S_H.HOBBY_ID
 --      Использовать обычное математическое округление. 
 --       Итоговый результат должен выглядеть примерно в таком виде:
 
---НИЧЕГО невыходи =(
+SELECT * 
+FROM (
+SELECT ROUND(SCORE) SCORE, N_GROUP 
+FROM STUDENTS$ ) 
+PIVOT
+( COUNT(N_GROUP)
+  FOR N_GROUP IN (4011, 3222, 4032)) -- SELECT не работает, только ручками?
+ORDER BY ROUND(SCORE)
 
 
 
@@ -749,7 +757,7 @@ UPDATE HOBBIES$
                    FROM STUDENTS_HOBBIES$
                    GROUP BY HOBBY_ID
                    ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY --DISTINCT не работает, для чего он?
-             )
+             ) AND RISK > 1
 
 --5. ++ Добавьте всем студентам, которые занимаются хотя бы 
 --     одним хобби 0.01 балл
@@ -864,11 +872,11 @@ FROM STUDENTS$
 WHERE SCORE < 3.2)
 )
 
-
---N_Z у кого нет хобби
- INSERT INTO STUDENTS_HOBBIES$ (ID, N_Z, HOBBY_ID, DATE_START, DATE_FINISH)
-VALUES (id, n_z, 11, '11-09-2018', null)
---как соединить
+--изменить если нету хобби
+ INSERT INTO STUDENTS_HOBBIES$ (N_Z, HOBBY_ID, DATE_START, DATE_FINISH)
+SELECT S.N_Z, '11', SYSDATE, NULL
+FROM STUDENTS$ S
+WHERE S.N_Z IN (
 SELECT *
 FROM (
 SELECT N_Z
@@ -882,6 +890,7 @@ WHERE N_Z IN (
 SELECT N_Z
 FROM STUDENTS$
 WHERE SCORE < 3.2)
+)
 )
 
 --как соеднить два условия?
