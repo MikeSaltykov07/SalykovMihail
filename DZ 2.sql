@@ -590,10 +590,9 @@ INNER JOIN STUDENTS_HOBBIES S_H ON S_H.N_Z = S.N_Z
 GROUP BY TO_CHAR(DATE_BIRTH, 'YYYY')
 
 
---30. Для каждой буквы алфавита в имени найти максимальный и 
+--30. ++ Для каждой буквы алфавита в имени найти максимальный и 
 --     минимальный риск хобби.
 
--- опять, что мешает всё сделать в T1 - сгруппировать и найти min, max
 SELECT SUBSTR(S.NAME,1,1) ABC, MAX(H.RISK) MAX_RISK, MIN(H.RISK) MIN_RISK
 FROM STUDENTS S
 INNER JOIN STUDENTS_HOBBIES S_H ON S.N_Z = S_H.N_Z
@@ -601,12 +600,8 @@ INNER JOIN HOBBIES H ON H.ID = S_H.HOBBY_ID
 GROUP BY SUBSTR(S.NAME,1,1)
 ORDER BY SUBSTR(S.NAME,1,1)
 
---31. Для каждого месяца из даты рождения вывести средний балл 
+--31. ++ Для каждого месяца из даты рождения вывести средний балл 
 --     студентов, которые занимаются хобби с названием «Футбол»
-
--- как и выше, сгруппировать по alias не получится, т.к.
--- select выполняется уже после group by
--- но по TO_CHAR(S.DATE_BIRTH, 'MM') - спокойно, если с этим непонятно
 
 SELECT TO_CHAR(S.DATE_BIRTH, 'MM') MM, AVG(S.SCORE)
 FROM STUDENTS$ S
@@ -617,11 +612,10 @@ H.NAME = 'Футбол'
 GROUP BY TO_CHAR(S.DATE_BIRTH, 'MM')
 ORDER BY TO_CHAR(S.DATE_BIRTH, 'MM')
 
---32. Вывести информацию о студентах, которые занимались или занимаются 
+--32. ++ Вывести информацию о студентах, которые занимались или занимаются 
 --      хотя бы 1 хобби в следующем формате: 
 --      Имя: Иван, фамилия: Иванов, группа: 1234
 
--- да, но лучше использовать обычный INNER JOIN
 SELECT S.NAME "Имя" , S.SURNAME "Фамилия", S.N_GROUP "группа"
 FROM STUDENTS$ S
 INNER JOIN (
@@ -668,10 +662,7 @@ FROM (
 SELECT RPAD(SURNAME, 10, '#') R
 FROM STUDENTS$ ) T
 
---36. Выведите на экран сколько дней в апреле 2018 года.
--- В теории дожен работать; не работает
-
--- нужно получить 2 даты. Делай не to_char, а to_date и просто разница между ними
+--36. ++ Выведите на экран сколько дней в апреле 2018 года.
 
 SELECT  TO_DATE('01-05-2018') - TO_DATE('01-04-2018') 
 FROM DUAL
@@ -703,7 +694,7 @@ FROM STUDENTS$ S
 INNER JOIN STUDENTS_HOBBIES$ S_H ON S_H.N_Z = S.N_Z 
 INNER JOIN HOBBIES$ H ON H.ID = S_H.HOBBY_ID
 
---40. Для каждой группы вывести сколько студентов учится на 5,4,3,2. 
+--40. ++ Для каждой группы вывести сколько студентов учится на 5,4,3,2. 
 --      Использовать обычное математическое округление. 
 --       Итоговый результат должен выглядеть примерно в таком виде:
 
@@ -713,8 +704,9 @@ SELECT ROUND(SCORE) SCORE, N_GROUP
 FROM STUDENTS$ ) 
 PIVOT
 ( COUNT(N_GROUP)
-  FOR N_GROUP IN (4011, 3222, 4032)) -- SELECT не работает, только ручками?
+  FOR N_GROUP IN (4011, 3222, 4032)) -- SELECT не работает, только ручками? Да, только так, т.к. атрибуты должны быть известны
 ORDER BY ROUND(SCORE)
+
 
 
 
@@ -855,7 +847,7 @@ END WHERE NAME IN ('Футбол', 'Баскетбол')
 INSERT INTO HOBBIES$ (ID, NAME, RISK)
 VALUES (11, 'Учёба', .10)
 
---11. У всех студентов, средний балл которых меньше 3.2 поменяйте 
+--11. ++ У всех студентов, средний балл которых меньше 3.2 поменяйте 
 --     во всех хобби (если занимается чем-либо) и добавьте 
 --     (если ничем не занимается), что студент занимается 
 --     хобби из 10 задания
@@ -953,7 +945,7 @@ INNER JOIN
 WHERE T1.D_B > T2.D_S )
 
 
-
+-- P.S. https://github.com/RyabovNick/databasecourse2019/tree/master/Tasks/2_Queries#разное
 
 
 
