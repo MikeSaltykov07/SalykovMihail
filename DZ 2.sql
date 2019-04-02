@@ -977,6 +977,9 @@ FROM STUDENTS$
 SELECT NAME, SURNAME, SCORE, RANK() OVER(ORDER BY SCORE DESC) RANK 
 FROM STUDENTS$
 
+SELECT NAME, SURNAME, SCORE, (Select ... score >= t.score) 
+FROM STUDENTS$
+
 
 --2. напишите запрос, который позволяет найти коэффициент отмены 
 --     запросов незабаненными пользователями в заданный период 1 октября
