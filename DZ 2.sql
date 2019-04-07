@@ -980,6 +980,14 @@ FROM STUDENTS$
 SELECT NAME, SURNAME, SCORE, (Select ... score >= t.score) 
 FROM STUDENTS$
 
+SELECT NAME, SURNAME, SCORE, (Select
+                               case 
+                                when score <= t.score then rank+1 -- AND T.SCORE = SCORE  
+								--ОПЕРАТОР = НЕ РАБОТАЕТ ПО ДРУГОМУ ОЧЕНЬ СЛОЖНО
+                               end 
+                              from( select 0 as rank, 0 AS SCORE  from DUAL) t) 
+FROM STUDENTS$
+ORDER BY SCORE DESC
 
 --2. напишите запрос, который позволяет найти коэффициент отмены 
 --     запросов незабаненными пользователями в заданный период 1 октября
@@ -989,11 +997,25 @@ FROM STUDENTS$
 --     внимательнее. 
 --Главное правильно решить задачу, а не вывести правильный результа):
 
---даже не знаю как сделать коэфф
+SELECT REQUEST_AT, ( SELECT COUNT / COUNT(*) FROM USERS U INNER JOIN TRIPS T ON T.CLIENT_ID = U.USERS_ID WHERE REQUEST_AT BETWEEN '2013-10-01' AND '2013-10-03'
+AND BANNED = 'No') as coefficient
+FROM (
 
 
+SELECT COUNT(*) AS COUNT, REQUEST_AT 
+FROM USERS U
+INNER JOIN TRIPS T ON T.CLIENT_ID = U.USERS_ID
+WHERE REQUEST_AT BETWEEN '2013-10-01' AND '2013-10-03'
+AND BANNED = 'No'
+GROUP BY REQUEST_AT 
+) F
+ORDER BY REQUEST_AT 
 
 
+--Что значит отменые запросы, пока вывел коэф незабаненых 
+--      пользователей по указанный период
 
+
+--Project1 что дальше делать?
 
 
