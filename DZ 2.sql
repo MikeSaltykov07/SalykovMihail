@@ -972,6 +972,12 @@ WHERE T1.D_B > T2.D_S )
 SELECT NAME, SURNAME, SCORE, DENSE_RANK() OVER(ORDER BY SCORE DESC) RANK 
 FROM STUDENTS$
 
+SELECT NAME, SURNAME, SCORE, (Select count(*)
+                              from(select distinct score rank from students) t 
+				where t.rank >= score)
+FROM STUDENTS
+ORDER BY SCORE DESC
+
 --1.2. С пропуском номеров (если 3 студента 6 номер, то следующий 
 --       должен быть иметь 9 ранк)
 SELECT NAME, SURNAME, SCORE, RANK() OVER(ORDER BY SCORE DESC) RANK 
@@ -980,12 +986,9 @@ FROM STUDENTS$
 SELECT NAME, SURNAME, SCORE, (Select ... score >= t.score) 
 FROM STUDENTS$
 
-SELECT NAME, SURNAME, SCORE, (Select
-                               case 
-                                when score <= t.score then rank+1 -- AND T.SCORE = SCORE  
-								--ОПЕРАТОР = НЕ РАБОТАЕТ ПО ДРУГОМУ ОЧЕНЬ СЛОЖНО
-                               end 
-                              from( select 0 as rank, 0 AS SCORE  from DUAL) t) 
+SELECT NAME, SURNAME, SCORE, (Select count(*)
+                              from(select distinct score rank from students$) t 
+							  where t.rank >= score) 
 FROM STUDENTS$
 ORDER BY SCORE DESC
 
@@ -999,15 +1002,13 @@ ORDER BY SCORE DESC
 --Главное правильно решить задачу, а не вывести правильный результа):
 
 SELECT REQUEST_AT, ( SELECT COUNT / COUNT(*) FROM USERS U INNER JOIN TRIPS T ON T.CLIENT_ID = U.USERS_ID WHERE REQUEST_AT BETWEEN '2013-10-01' AND '2013-10-03'
-AND BANNED = 'No') as coefficient
+AND BANNED = 'No' AND STATUS = 'completed') as coefficient
 FROM (
-
-
 SELECT COUNT(*) AS COUNT, REQUEST_AT 
 FROM USERS U
 INNER JOIN TRIPS T ON T.CLIENT_ID = U.USERS_ID
 WHERE REQUEST_AT BETWEEN '2013-10-01' AND '2013-10-03'
-AND BANNED = 'No'
+AND BANNED = 'No' AND STATUS like 'cancelled_%'
 GROUP BY REQUEST_AT 
 ) F
 ORDER BY REQUEST_AT 
