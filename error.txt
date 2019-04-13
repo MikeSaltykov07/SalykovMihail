@@ -1,0 +1,9 @@
+Executing SQL script in server
+ERROR: Error 1044: Access denied for user 'SaltykovMihail'@'%' to database 'mydb'
+SQL Code:
+        CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8 
+
+SQL script execution finished: statements: 3 succeeded, 1 failed
+
+Fetching back view definitions in final form.
+Nothing to fetch
