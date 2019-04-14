@@ -973,8 +973,8 @@ SELECT NAME, SURNAME, SCORE, DENSE_RANK() OVER(ORDER BY SCORE DESC) RANK
 FROM STUDENTS$
 
 SELECT NAME, SURNAME, SCORE, (Select count(*)
-                              from(select distinct score rank from students) t 
-				where t.rank >= score)
+                              from(select score rank from students) t 
+							  where t.rank > score) 
 FROM STUDENTS
 ORDER BY SCORE DESC
 
@@ -1013,11 +1013,9 @@ GROUP BY REQUEST_AT
 ) F
 ORDER BY REQUEST_AT 
 
-
---Что значит отменые запросы, пока вывел коэф незабаненых 
---      пользователей по указанный период
+--потерял смысл задания, и не знаю как сохранить картеж с 0
 
 
---Project1 что дальше делать?
+--Project1 При добавлении данных нашлись косяки проектирования, легче всё заного перезалить или есть другие варианты?
 
 
