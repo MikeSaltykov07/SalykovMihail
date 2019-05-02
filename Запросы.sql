@@ -69,6 +69,7 @@ delete from People_Roles where Id_People=14;
 delete from Roles where id=5;
 
 -- 6. Выведите группу/ы, состав которой менялся чаще всего
+-- можно без вложенности, используй having
 select Id_collectives
  from (
       select Id_collectives, count(*) as `count`
@@ -83,6 +84,13 @@ where t.`count` = (
 );
 
 -- 7. У каждой группы выведите альбом, который относится к наибольшему числу жанров
+-- интересный подход, но я бы так не делал
+-- напиши ещё раз запрос, но также, как например
+-- разбирали на паре 8 (вроде) задание на удаление.
+-- т.е. 1 select - альбом и кол-во жанров,
+-- а 2-ой выводит альбом и макс. кол-во жанров из всех альбомов
+-- этой группы
+-- и сравни cost выполнения запроса, что лучше)
 select a.Id_collectives, (
                           select t.Id_album
                            from (
@@ -99,6 +107,7 @@ from Album a
 group by a.Id_collectives
 
 -- 8. Выведите людей, которые состояли более чем в 1 группе
+-- ++
 select p.*
 from People p
 inner join (
@@ -114,6 +123,7 @@ inner join (
 ) c on c.Id_people = p.Id_people
 
 -- 9. Выведите 3 самых длинных композиций в каждом жанре
+-- для чего нужны @ ?)
 select Genres_Id, Compositions_Id
 from (
       select 
