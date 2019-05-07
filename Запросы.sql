@@ -123,7 +123,7 @@ inner join (
 ) c on c.Id_people = p.Id_people
 
 -- 9. Выведите 3 самых длинных композиций в каждом жанре
--- для чего нужны @ ?)
+-- для чего нужны @ ?) чтобы пронумировать, композиции в жанре
 select Genres_Id, Compositions_Id
 from (
       select 
